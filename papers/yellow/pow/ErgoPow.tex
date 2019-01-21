@@ -9,17 +9,30 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \bibliographystyle{IEEEtran}
+\usepackage{amsthm}
 
 \newcommand{\knote}[1]{\textcolor{green}{A: {#1}}}
 \newcommand{\dnote}[1]{\textcolor{red}{D: {#1}}}
 \newcommand{\vk}[1]{\textcolor{blue}{V: {#1}}}
 \newcommand{\lnote}[1]{\textcolor{cyan}{L: {#1}}}
+
+\newcommand{\Ticket}{\mathsf{ticket}}
+\newcommand{\KeyGen}{\mathsf{KeyGen}}
+\newcommand{\PuzzleGen}{\mathsf{PuzzleGen}}
+\newcommand{\Eval}{\mathsf{Evaluate}}
+\newcommand{\Verify}{\mathsf{Verify}}
+\newcommand{\ObtainTicket}{\mathsf{ObtainTicket}}
 \newcommand{\Name}{$Autolykos$}
 \def\Let#1#2{\State #1 $:=$ #2}
 \def\LetRnd#1#2{\State #1 $\gets$ #2}
 
 \newcommand{\pk}{\mathsf{pk}}
 \newcommand{\sk}{\mathsf{sk}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{claim}{Claim}
+\newtheorem{game}{Game}
 
 \begin{document}
     \title{\Name: The Ergo Platform PoW Puzzle}
@@ -68,6 +81,103 @@
     In Section~\ref{puzzle} we provide a full
     specification of \Name, while in Section~\ref{discussion} we discuss its
     properties. Few auxiliary algorithms are placed in~\nameref{appendix}.
+
+    \section{Non-outsourceability of Keyed Puzzles}
+    Proof-of-Work puzzles are usually constructed as sequence of independent
+    tries for tickets in order to find one which satisfies
+    \begin{equation}
+        \Eval(m,\mathsf{ticket})<z\,,
+        \label{eq:default_pow}
+    \end{equation}
+    where $\Eval$ is some function (such as hash in Bitcoin), $m$ is the payload,
+    and the space of valid tickets can also be a subject to some constraints.
+    Miller's paper exploits the idea that the puzzle can be constructed in such
+    a way that the worker who was capable of constructing one winning ticket can
+    also produce another one inicitaing the race with the outsourcer. In what
+    follows we reason in a slightly diffiernt manner: we embed the public key in
+    the puzzle instance such that the checks~\eqref{eq:default_pow} can only be
+    performed efficiently with the help of the secret key. Therefore,
+    either every ticket try requires additional communication between outsourcer
+    and worker to check condition~\eqref{eq:default_pow}, or outsourcer provides
+    the secret key to the worker putting itself at risk of rewards theft.
+
+    The simplest way to implement this requirement is to use signature instead
+    of $\Eval$. For example, the second field of Schnorr signature (response in
+    corresponding $\Sigma$-protocol) would suffice. However, in this case one is
+    restricted to a narrow set of admissible puzzles: the freedom of choice is
+    only in discrete logarithm group and hash function in use. In order to
+    broaden the class of puzzles one can also embed the secret key in ticket
+    generation routine (to make winning ticket generation more efficient with
+    the use of secret key). This can be used to convert puzzles more sophisticated
+    than simple trial of pseudorandom numbers to non-outsourceable form. In what
+    follows $\lambda$ stands for security parameter.
+    \begin{definition}
+        {\bf Keyed Proof-of-Work Puzzle} is parametrized by payload $m$ and
+        current target value $z$. It consists of the following algorithms
+        \begin{itemize}
+            \item $\KeyGen(1^\lambda)\rightarrow (pk,sk)$ generates a pair (public key,
+                secret key)
+            \item $\PuzzleGen(pk)\rightarrow \mathsf{puz}$ generates a puzzle instance
+            \item
+                $\ObtainTicket(\mathsf{puz},sk,m,z)\rightarrow\Ticket \,
+                \mathrm{or}\,\bot$
+                is a randomized algorithm generating ticket of 
+                $\mathsf{puz}$ solution (not necessarily satisfying target
+                criterium)
+            \item $\Eval(\Ticket,sk,m)\rightarrow d$
+                returns a number. The ticket is winning iff $d<z$, where $z$
+                is the current target value
+            \item $\Verify(\Ticket,pk,m,d)$ returns $\mathsf{True}$ iff
+                $\Ticket$ is a valid ticket for $\mathsf{puz}$ with payload $m$,
+                and $\Eval(\Ticket,sk,m)=d$. It returns $\mathsf{False}$
+                otherwise
+        \end{itemize}
+    \end{definition}
+    Tuple $(\Ticket, pk, m, d)$ can be open public, and is treated as the
+    solution. The signature corresponding to $pk$ is required to claim the block
+    reward. The network checks the corretness using $\Verify$ function.
+
+    The mining consists in repeated calls of $\ObtainTicket$ function.
+    The $\Eval$ function can be implemented inside (then $\ObtainTicket$
+    returns winning tickets only) or have separate calls, existence of this
+    algorithm is essential.
+
+    \begin{definition}
+        A keyed Proof-of-Work puzzle $\mathcal{P}$ is {\bf non-transferrable} if
+        \vk{No gain in generating for some new payload $m'$ and some $pk'$ given
+        $\{(\Ticket_i, pk_i, m_i, d_i)\}$.}
+    \end{definition}
+
+    \begin{definition}
+        A keyed Proof-of-Work puzzle $\mathcal{P}$ is {\bf secure under key
+        extraction} if for any efficient adversary $\mathcal{A}$ such that
+        \begin{equation}
+            \mathsf{Pr}[\mathcal{A}(\Ticket,pk,m,d)=sk]\le\mathsf{negl}(\lambda).
+        \end{equation}
+    \end{definition}
+
+    \begin{definition}
+        We call a keyed Proof-of-Work puzzle $\mathcal{P}$ {\bf non-outsourceable} if
+        it is secure under key extraction, non-transferrable, and for any efficient adversary
+        $\mathcal{A}$ such that 
+        \begin{equation}
+            \mathsf{Pr}[\mathcal{A}(\Ticket, pk, m, c)=\Eval(\Ticket, sk, m)]\ge
+            \mathsf{negl}(\lambda)\,,
+        \end{equation}
+        where $c$ is arbitrary additional input data, and $\Ticket$ is chosen
+        randomly \vk{From distribution provided by $\ObtainTicket$ function}
+        there exists an extractor $\mathcal{E}$ taking the same input, such that
+        \begin{equation}
+            \mathsf{Pr}[\mathcal{E}(\Ticket,pk,m,c)=sk]\ge
+            \mathsf{negl}(\lambda)\,.
+        \end{equation}
+    \end{definition}
+    \vk{not exactly. game needed}
+
+    Losely speaking, a keyed puzzle is non-outsourceable if previous solutions to
+    the puzzle do not affect the performance of future solving, the secret key
+    cannot be extracted from the solution, and if the worker can check whether
+    its solution match the target, it knows the secret key.
 
     \section{Ergo PoW puzzle}
     \label{puzzle}
@@ -137,6 +247,9 @@
     \end{algorithm}
 
     \section{Security and Non-Outsourceability}
+    \begin{claim}
+        ErgoPoW is a keyed PoW puzzle.
+    \end{claim}
     First, notice that in Algorithm~\ref{alg:prove} we refer to construction
     $f(m,nonce,w,pk)=\sum_{j\in genIndexes(m||nonce)} H(j||M||pk||w)$ as a hash
     function. Public key plays a role of commitment. Therefore, the pair
@@ -145,16 +258,26 @@
     value of $f$, and pass to more common notations:
     $e=f(m,nonce,w,w^eg^{-d})$. The puzzle consists in trying
     different nonces and keys in order for signature to satisfy
-    $d\in\{-b,\dots,0,\dots,b\}$. Security follows from the security of Schnor
-    signatures, and outsourcing the puzzle is equivalent to outsourcing the
-    signature (or parts of signature creation routine). The only difference from
-    conventional setup is the design of function $f$. It must be constructed in such
-    a way that efficient massive evaluations with different nonces require
-    allocating large amount of memory (benefitting from data reuse), whereas
-    single evaluation on verifier's side can be done ``on fly''.
+    $d\in\{-b,\dots,0,\dots,b\}$. 
+    \begin{claim}
+        ErgoPoW is non-transferrable
+    \end{claim}
+    \begin{claim}
+        ErgoPoW is secure under key extraction
+    \end{claim}
+    \begin{theorem}
+        ErgoPoW is non-outsourceable as a keyed PoW puzzle
+    \end{theorem}
+    %Security follows from the security of Schnor
+    %signatures, and outsourcing the puzzle is equivalent to outsourcing the
+    %signature (or parts of signature creation routine). The only difference from
+    %conventional setup is the design of function $f$. It must be constructed in such
+    %a way that efficient massive evaluations with different nonces require
+    %allocating large amount of memory (benefitting from data reuse), whereas
+    %single evaluation on verifier's side can be done ``on fly''.
 
-    \vk{I would exchange $pk$ and $w$, s.t. $pk$ is exactly public key and $w$
-    is commitment}
+    %\vk{I would exchange $pk$ and $w$, s.t. $pk$ is exactly public key and $w$
+    %is commitment}
 
     \section{Discussion}
     \label{discussion}
