@@ -137,14 +137,13 @@
     solution. The signature corresponding to $pk$ is required to claim the block
     reward. The network checks the corretness using $\Verify$ function.
 
-    The mining consists in repeated calls of $\ObtainTicket$ function.
+    Mining consists in repeated calls of $\ObtainTicket$ function.
     The $\Eval$ function can be implemented inside (then $\ObtainTicket$
-    returns winning tickets only) or have separate calls, existence of this
-    algorithm is essential.
+    returns winning tickets only) or have separate calls.
 
     \begin{definition}
         A keyed Proof-of-Work puzzle $\mathcal{P}$ is {\bf non-transferrable} if
-        \vk{No gain in generating for some new payload $m'$ and some $pk'$ given
+        \vk{No gain in generating ticket for new payload $m'$ and $pk'$ given
         $\{(\Ticket_i, pk_i, m_i, d_i)\}$.}
     \end{definition}
 
@@ -157,27 +156,16 @@
     \end{definition}
 
     \begin{definition}
-        We call a keyed Proof-of-Work puzzle $\mathcal{P}$ {\bf non-outsourceable} if
-        it is secure under key extraction, non-transferrable, and for any efficient adversary
-        $\mathcal{A}$ such that 
-        \begin{equation}
-            \mathsf{Pr}[\mathcal{A}(\Ticket, pk, m, c)=\Eval(\Ticket, sk, m)]\ge
-            \mathsf{negl}(\lambda)\,,
-        \end{equation}
-        where $c$ is arbitrary additional input data, and $\Ticket$ is chosen
-        randomly \vk{From distribution provided by $\ObtainTicket$ function}
-        there exists an extractor $\mathcal{E}$ taking the same input, such that
-        \begin{equation}
-            \mathsf{Pr}[\mathcal{E}(\Ticket,pk,m,c)=sk]\ge
-            \mathsf{negl}(\lambda)\,.
-        \end{equation}
+        We call a keyed Proof-of-Work puzzle $\mathcal{P}$ {\bf
+        non-outsourceable} if it is secure under key extraction,
+        non-transferrable, and a pair of functions $\Eval$, $\Verify$
+        constitutes non-interactive proof of knowledge system for $sk$.
     \end{definition}
-    \vk{not exactly. game needed}
 
-    Losely speaking, a keyed puzzle is non-outsourceable if previous solutions to
+    That is, a keyed PoW puzzle is non-outsourceable if previous solutions to
     the puzzle do not affect the performance of future solving, the secret key
-    cannot be extracted from the solution, and if the worker can check whether
-    its solution match the target, it knows the secret key.
+    cannot be extracted from the solution, and if the worker cannot check
+    whether its solution matches the target without knowing the secret key.
 
     \section{Ergo PoW puzzle}
     \label{puzzle}
@@ -262,6 +250,7 @@
     \begin{claim}
         ErgoPoW is non-transferrable
     \end{claim}
+    
     \begin{claim}
         ErgoPoW is secure under key extraction
     \end{claim}
