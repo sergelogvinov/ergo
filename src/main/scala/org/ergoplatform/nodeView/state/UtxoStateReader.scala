@@ -5,6 +5,7 @@ import org.ergoplatform.ErgoBox
 import org.ergoplatform.modifiers.ErgoFullBlock
 import org.ergoplatform.modifiers.history.ADProofs
 import org.ergoplatform.modifiers.mempool.{ErgoBoxSerializer, ErgoTransaction}
+import org.ergoplatform.nodeView.ErgoInterpreter
 import org.ergoplatform.settings.Algos
 import org.ergoplatform.settings.Algos.HF
 import scorex.core.transaction.state.TransactionValidation
@@ -16,7 +17,7 @@ import scala.util.{Failure, Try}
 
 trait UtxoStateReader extends ErgoStateReader with TransactionValidation[ErgoTransaction] {
 
-  protected implicit val hf = Algos.hash
+  protected implicit val hf: HF = Algos.hash
 
   val constants: StateConstants
 
@@ -29,12 +30,17 @@ trait UtxoStateReader extends ErgoStateReader with TransactionValidation[ErgoTra
     * Validate transaction as if it was included at the end of the last block.
     * This validation does not guarantee that transaction will be valid in future
     * as soon as state (both UTXO set and state context) will change.
+    *
+    * @return transaction cost
     */
-  override def validate(tx: ErgoTransaction): Try[Unit] =
-    tx.statelessValidity
-      .flatMap(_ =>
-        tx.statefulValidity(tx.inputs.flatMap(i => boxById(i.boxId)), stateContext, constants.settings.metadata)
-          .map(_ => Unit))
+  def validateWithCost(tx: ErgoTransaction): Try[Long] = {
+    tx.statelessValidity.flatMap { _ =>
+      implicit val verifier = ErgoInterpreter(stateContext.currentParameters)
+      tx.statefulValidity(tx.inputs.flatMap(i => boxById(i.boxId)), stateContext)
+    }
+  }
+
+  override def validate(tx: ErgoTransaction): Try[Unit] = validateWithCost(tx).map(_ => Unit)
 
   /**
     *
