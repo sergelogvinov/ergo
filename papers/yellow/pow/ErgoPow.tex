@@ -135,7 +135,8 @@
     \end{definition}
     Tuple $(\Ticket, pk, m, d)$ can be open public, and is treated as the
     solution. The signature corresponding to $pk$ is required to claim the block
-    reward. The network checks the corretness using $\Verify$ function.
+    reward. The network checks corretness using $\Verify$ function and matching
+    target condition $d<z$.
 
     Mining consists in repeated calls of $\ObtainTicket$ function.
     The $\Eval$ function can be implemented inside (then $\ObtainTicket$
@@ -143,8 +144,8 @@
 
     \begin{definition}
         A keyed Proof-of-Work puzzle $\mathcal{P}$ is {\bf non-transferrable} if
-        \vk{No gain in generating ticket for new payload $m'$ and $pk'$ given
-        $\{(\Ticket_i, pk_i, m_i, d_i)\}$.}
+        \vk{No gain in generating ticket for new pair $(m',pk')\ne (m_i,pk_i)$
+            for some $i$ given set $\{(\Ticket_j, pk_j, m_j, d_j)\}$.}
     \end{definition}
 
     \begin{definition}
