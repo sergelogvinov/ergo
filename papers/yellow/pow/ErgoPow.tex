@@ -115,9 +115,10 @@
         {\bf Keyed Proof-of-Work Puzzle} is parametrized by payload $m$ and
         current target value $z$. It consists of the following algorithms
         \begin{itemize}
-            \item $\KeyGen(1^\lambda)\rightarrow (pk,sk)$ generates a pair (public key,
-                secret key)
-            \item $\PuzzleGen(pk)\rightarrow \mathsf{puz}$ generates a puzzle instance
+            \item $\KeyGen(1^\lambda)\rightarrow (pk,sk)$ is a randomized
+                algorithm generating a pair (public key, secret key)
+            \item $\PuzzleGen(pk)\rightarrow \mathsf{puz}$ is a deterministic
+                algorithm generating a puzzle instance
             \item
                 $\ObtainTicket(\mathsf{puz},sk,m,z)\rightarrow\Ticket \,
                 \mathrm{or}\,\bot$
@@ -165,7 +166,7 @@
 
     That is, a keyed PoW puzzle is non-outsourceable if previous solutions to
     the puzzle do not affect the performance of future solving, the secret key
-    cannot be extracted from the solution, and if the worker cannot check
+    cannot be extracted from the solution, and the worker cannot check
     whether its solution matches the target without knowing the secret key.
 
     \section{Ergo PoW puzzle}
