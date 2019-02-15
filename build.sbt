@@ -92,6 +92,8 @@ sourceGenerators in Compile += Def.task {
 
 mainClass in assembly := Some("org.ergoplatform.ErgoApp")
 
+assemblyJarName in assembly := "platonet.jar"
+
 test in assembly := {}
 
 assemblyMergeStrategy in assembly := {
